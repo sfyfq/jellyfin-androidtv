@@ -93,8 +93,8 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
 
     private boolean justLoaded = true;
     private PosterSize mPosterSizeSetting = PosterSize.MED;
-    private ImageType mImageType = ImageType.POSTER;
-    private GridDirection mGridDirection = GridDirection.HORIZONTAL;
+    private ImageType mImageType = ImageType.THUMB;
+    private GridDirection mGridDirection = GridDirection.VERTICAL;
     private boolean determiningPosterSize = false;
 
     private UUID mParentId;
@@ -276,7 +276,7 @@ public class BrowseGridFragment extends Fragment implements View.OnKeyListener {
     public void setItem(BaseRowItem item) {
         if (item != null) {
             binding.title.setText(item.getFullName(requireContext()));
-            InfoLayoutHelper.addInfoRow(requireContext(), item.getBaseItem(), binding.infoRow, true);
+            InfoLayoutHelper.addInfoRow(requireContext(), item.getBaseItem(), binding.infoRow, true, 1.0f);
         } else {
             binding.title.setText("");
             binding.infoRow.removeAllViews();

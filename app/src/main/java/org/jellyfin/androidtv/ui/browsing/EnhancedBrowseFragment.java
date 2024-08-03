@@ -60,6 +60,7 @@ import org.jellyfin.sdk.model.api.BaseItemDto;
 import org.jellyfin.sdk.model.api.BaseItemKind;
 import org.koin.java.KoinJavaComponent;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -265,6 +266,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
                     rowAdapter = new ItemRowAdapter(requireContext(), def.getSpecialsQuery(), new CardPresenter(true, ImageType.THUMB, 150), mRowsAdapter);
                     break;
                 default:
+                    System.out.println("calling the default case");
                     rowAdapter = new ItemRowAdapter(requireContext(), def.getQuery(), def.getChunkSize(), def.getPreferParentThumb(), def.isStaticHeight(), ps, mRowsAdapter, def.getQueryType());
                     break;
             }
@@ -471,7 +473,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
                 mSummary.setText(markdownRenderer.getValue().toMarkdownSpanned(summary));
             else mSummary.setText(null);
 
-            InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true);
+            InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true, 1f);
 
             ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) row).getAdapter();
             adapter.loadMoreItemsIfNeeded(adapter.indexOf(rowItem));

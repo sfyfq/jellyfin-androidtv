@@ -33,7 +33,7 @@ fun BaseItemDto.getSeasonEpisodeName(context: Context): String {
 		}
 	}
 
-	return listOfNotNull(seasonNumber, episodeNumber).joinToString(":")
+	return listOfNotNull(seasonNumber, episodeNumber).joinToString(": ")
 }
 
 fun BaseItemDto.getDisplayName(context: Context): String {
@@ -80,13 +80,14 @@ fun BaseItemDto.getFirstPerson(searchedType: PersonKind) = people?.firstOrNull {
 
 fun BaseItemDto.getFullName(context: Context): String? = when (type) {
 	BaseItemKind.EPISODE -> buildList {
-		add(seriesName)
-
+//		add(seriesName)
+		// So the new logic is as follows
+		// show special if parentIndexNumber==0, although I have no idea what it means
 		if (parentIndexNumber == 0) {
 			add(context.getString(R.string.episode_name_special))
 		} else {
-			if (parentIndexNumber != null)
-				add(context.getString(R.string.lbl_season_number, parentIndexNumber))
+//			if (parentIndexNumber != null)
+//				add(context.getString(R.string.lbl_season_number, parentIndexNumber))
 
 			if (indexNumber != null && indexNumberEnd != null)
 				add(context.getString(R.string.lbl_episode_range, indexNumber, indexNumberEnd))

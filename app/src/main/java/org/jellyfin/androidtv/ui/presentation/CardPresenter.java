@@ -64,7 +64,7 @@ public class CardPresenter extends Presenter {
     }
 
     class ViewHolder extends Presenter.ViewHolder {
-        private int cardWidth = 115;
+        private int cardWidth = 115; // changing these two numbers did not seem to change the size of the image
         private int cardHeight = 140;
 
         private BaseRowItem mItem;
@@ -87,7 +87,7 @@ public class CardPresenter extends Presenter {
         }
 
         public void setItem(BaseRowItem m) {
-            setItem(m, ImageType.POSTER, 130, 150, 150);
+            setItem(m, ImageType.POSTER, 115, 140, 140);
         }
 
         public void setItem(BaseRowItem m, ImageType imageType, int lHeight, int pHeight, int sHeight) {
@@ -131,6 +131,7 @@ public class CardPresenter extends Presenter {
                             break;
                         case SEASON:
                         case SERIES:
+                            // SERIES can be a collection of Seasons. So you want the card for the seasons to be in portrait.
                             mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_port_tv);
                             if (imageType.equals(ImageType.POSTER))
                                 aspect = ImageHelper.ASPECT_RATIO_2_3;
@@ -169,7 +170,7 @@ public class CardPresenter extends Presenter {
                         case FOLDER:
                         case GENRE:
                         case MUSIC_GENRE:
-                            mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_port_folder);
+                            mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_land_tv);
                             break;
                         case PHOTO:
                             mDefaultCardImage = ContextCompat.getDrawable(mCardView.getContext(), R.drawable.tile_land_photo);
@@ -193,6 +194,7 @@ public class CardPresenter extends Presenter {
                                 aspect = ImageHelper.ASPECT_RATIO_2_3;
                             break;
                     }
+                    // if staticHeight then use sHeight, otherwise use lHeight if aspect > 1 or pHeight otherwise
                     cardHeight = !m.getStaticHeight() ? (aspect > 1 ? lHeight : pHeight) : sHeight;
                     cardWidth = (int) (aspect * cardHeight);
                     if (cardWidth < 5) {
@@ -341,10 +343,11 @@ public class CardPresenter extends Presenter {
         BaseRowItem rowItem = (BaseRowItem) item;
 
         ViewHolder holder = (ViewHolder) viewHolder;
-        holder.setItem(rowItem, mImageType, 130, 150, mStaticHeight);
+        holder.setItem(rowItem, mImageType, 90, 100, mStaticHeight);
 
         holder.mCardView.setTitleText(rowItem.getCardName(holder.mCardView.getContext()));
-        holder.mCardView.setContentText(rowItem.getSubText(holder.mCardView.getContext()));
+//        holder.mCardView.setContentText(rowItem.getSubText(holder.mCardView.getContext()));
+
         if (ImageType.POSTER.equals(mImageType)) {
             holder.mCardView.setOverlayInfo(rowItem);
         }

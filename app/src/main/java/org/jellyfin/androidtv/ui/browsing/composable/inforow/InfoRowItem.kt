@@ -27,6 +27,7 @@ fun InfoRowItem(
 	// Icon options
 	icon: Painter? = null,
 	contentDescription: String?,
+	sizeScale: Float = 1.0f,
 	// Styling
 	colors: Pair<Color, Color> = InfoRowColors.Transparent,
 	// Content
@@ -45,7 +46,11 @@ fun InfoRowItem(
 	ProvideTextStyle(
 		value = TextStyle(
 			color = foregroundColor,
-			fontSize = if (backgroundColor.alpha > 0f) 12.sp else 16.sp,
+			fontSize = if (backgroundColor.alpha > 0f) {
+				(12.sp * sizeScale).value.sp
+			} else {
+				(16.sp * sizeScale).value.sp
+			}
 		)
 	) {
 		Row(
@@ -57,11 +62,16 @@ fun InfoRowItem(
 				Image(
 					painter = icon,
 					contentDescription = contentDescription,
-					modifier = Modifier.size(if (backgroundColor.alpha > 0f) 16.dp else 18.dp),
-				)
+					modifier = Modifier.size(if
+						(backgroundColor.alpha > 0f){
+						(16.dp * sizeScale).value.dp
+					}else{
+						(18.dp * sizeScale).value.dp
+					}))
 			}
 
 			content()
 		}
 	}
 }
+

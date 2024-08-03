@@ -40,6 +40,7 @@ import kotlin.time.Duration
 @Composable
 fun InfoRowDate(
 	item: BaseItemDto,
+	sizeScale: Float
 ) {
 	val date = when (item.type) {
 		BaseItemKind.PERSON -> {
@@ -73,7 +74,7 @@ fun InfoRowDate(
 	}
 
 	if (date != null) {
-		InfoRowItem(contentDescription = null) {
+		InfoRowItem(null, null, sizeScale, InfoRowColors.Transparent, ){
 			Text(date)
 		}
 	}
@@ -82,6 +83,7 @@ fun InfoRowDate(
 @Composable
 fun InfoRowSeriesStatus(
 	item: BaseItemDto,
+	sizeScale: Float,
 ) {
 	val seriesStatus = item.status?.let(SeriesStatus::fromNameOrNull)
 
@@ -89,6 +91,7 @@ fun InfoRowSeriesStatus(
 		when (seriesStatus) {
 			SeriesStatus.CONTINUING -> InfoRowItem(
 				contentDescription = stringResource(R.string.lbl__continuing),
+				sizeScale = sizeScale,
 				colors = InfoRowColors.Green,
 			) {
 				Text(stringResource(R.string.lbl__continuing))
@@ -96,6 +99,7 @@ fun InfoRowSeriesStatus(
 
 			SeriesStatus.ENDED -> InfoRowItem(
 				contentDescription = stringResource(R.string.lbl_ended),
+				sizeScale = sizeScale,
 				colors = InfoRowColors.Red,
 			) {
 				Text(stringResource(R.string.lbl_ended))
@@ -103,6 +107,7 @@ fun InfoRowSeriesStatus(
 
 			SeriesStatus.UNRELEASED -> InfoRowItem(
 				contentDescription = stringResource(R.string.unreleased),
+				sizeScale = sizeScale,
 				colors = InfoRowColors.Default,
 			) {
 				Text(stringResource(R.string.unreleased))
@@ -114,38 +119,42 @@ fun InfoRowSeriesStatus(
 @Composable
 fun BaseItemInfoRowRuntime(
 	runTime: Duration,
+	sizeScale: Float
 ) {
 	InfoRowItem(
-		icon = painterResource(id = R.drawable.ic_time),
-		contentDescription = null,
-	) {
+		painterResource(id = R.drawable.ic_time),
+		null,
+		sizeScale,
+		InfoRowColors.Transparent,
+	){
 		Text(TimeUtils.formatMillis(runTime.inWholeMilliseconds))
 	}
+
 }
 
 @Composable
-fun InfoRowSeasonEpisode(item: BaseItemDto) {
+fun InfoRowSeasonEpisode(item: BaseItemDto, sizeScale: Float) {
 	val context = LocalContext.current
 	val displayName = item.getSeasonEpisodeName(context)
 
 	if (displayName.isNotBlank()) {
-		InfoRowItem(contentDescription = null) {
+		InfoRowItem(contentDescription = null, sizeScale = sizeScale) {
 			Text(displayName)
 		}
 	}
 }
 
 @Composable
-fun InfoRowMediaDetails(item: BaseItemDto) {
+fun InfoRowMediaDetails(
+	item: BaseItemDto,
+	sizeScale: Float
+	) {
 	val videoStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.VIDEO }
 	val audioStream = item.mediaStreams?.firstOrNull { it.type == MediaStreamType.AUDIO }
 
 	// Subtitles
 	if (item.hasSubtitles == true) {
-		InfoRowItem(
-			contentDescription = null,
-			colors = InfoRowColors.Default,
-		) {
+		InfoRowItem(null, null, sizeScale, InfoRowColors.Default, ){
 			Text(stringResource(R.string.indicator_subtitles))
 		}
 	}
@@ -157,11 +166,7 @@ fun InfoRowMediaDetails(item: BaseItemDto) {
 			height = videoStream.height ?: 0,
 			interlaced = videoStream.isInterlaced,
 		)
-
-		InfoRowItem(
-			contentDescription = null,
-			colors = InfoRowColors.Default,
-		) {
+		InfoRowItem(null, null, sizeScale, InfoRowColors.Default,){
 			Text(resolution)
 		}
 	}
@@ -175,10 +180,7 @@ fun InfoRowMediaDetails(item: BaseItemDto) {
 		else -> videoStream?.codec?.uppercase()
 	}
 	if (!videoCodecName.isNullOrBlank()) {
-		InfoRowItem(
-			contentDescription = null,
-			colors = InfoRowColors.Default,
-		) {
+		InfoRowItem(null, null, sizeScale, InfoRowColors.Default,){
 			Text(videoCodecName)
 		}
 	}
@@ -196,10 +198,7 @@ fun InfoRowMediaDetails(item: BaseItemDto) {
 		}
 	}
 	if (!audioCodecName.isNullOrBlank()) {
-		InfoRowItem(
-			contentDescription = null,
-			colors = InfoRowColors.Default,
-		) {
+		InfoRowItem(null, null, sizeScale, InfoRowColors.Default,){
 			Text(audioCodecName)
 		}
 	}
@@ -207,10 +206,7 @@ fun InfoRowMediaDetails(item: BaseItemDto) {
 	// Audio channel layout
 	val audioChannelLayout = audioStream?.channelLayout?.uppercase()
 	if (!audioChannelLayout.isNullOrBlank()) {
-		InfoRowItem(
-			contentDescription = null,
-			colors = InfoRowColors.Default,
-		) {
+		InfoRowItem(null, null,sizeScale, InfoRowColors.Default,){
 			Text(audioChannelLayout)
 		}
 	}
@@ -220,6 +216,7 @@ fun InfoRowMediaDetails(item: BaseItemDto) {
 fun BaseItemInfoRow(
 	item: BaseItemDto,
 	includeRuntime: Boolean,
+	sizeScale: Float=1.0f,
 ) {
 	val userPreferences = koinInject<UserPreferences>()
 	val ratingType = userPreferences[UserPreferences.defaultRatingType]
@@ -229,17 +226,21 @@ fun BaseItemInfoRow(
 		verticalAlignment = Alignment.CenterVertically,
 	) {
 		if (ratingType != RatingType.RATING_HIDDEN) {
-			item.communityRating?.let { InfoRowCommunityRating(it / 10f) }
-			item.criticRating?.let { InfoRowCriticRating(it / 100f) }
+			item.communityRating?.let { InfoRowCommunityRating(it / 10f, sizeScale) }
+			item.criticRating?.let { InfoRowCriticRating(it / 100f, sizeScale) }
 		}
 
 		when (item.type) {
 			BaseItemKind.EPISODE -> {
-				InfoRowSeasonEpisode(item)
-				InfoRowDate(item)
-				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				InfoRowSeasonEpisode(item, sizeScale)
+				InfoRowDate(item, sizeScale)
+				if (includeRuntime) item.runTimeTicks?.ticks?.let {
+					BaseItemInfoRowRuntime(it, sizeScale)
+				}
+				item.officialRating?.let {
+					InfoRowParentalRating(it, sizeScale)
+				}
+				InfoRowMediaDetails(item, sizeScale)
 			}
 
 			BaseItemKind.BOX_SET -> {
@@ -255,17 +256,17 @@ fun BaseItemInfoRow(
 					}
 				}
 				val runtime = item.cumulativeRunTimeTicks ?: item.runTimeTicks
-				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it, sizeScale) }
+				item.officialRating?.let { InfoRowParentalRating(it, sizeScale) }
+				InfoRowMediaDetails(item, sizeScale)
 			}
 
 			BaseItemKind.SERIES -> {
-				InfoRowDate(item)
-				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				InfoRowSeriesStatus(item)
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				InfoRowDate(item, sizeScale)
+				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it, sizeScale) }
+				InfoRowSeriesStatus(item, sizeScale)
+				item.officialRating?.let { InfoRowParentalRating(it, sizeScale) }
+				InfoRowMediaDetails(item, sizeScale)
 			}
 
 			BaseItemKind.PROGRAM -> {
@@ -301,9 +302,9 @@ fun BaseItemInfoRow(
 					}
 				}
 
-				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it, sizeScale) }
+				item.officialRating?.let { InfoRowParentalRating(it, sizeScale) }
+				InfoRowMediaDetails(item, sizeScale)
 			}
 
 			BaseItemKind.MUSIC_ARTIST -> {
@@ -323,7 +324,7 @@ fun BaseItemInfoRow(
 						Text(artist)
 					}
 				}
-				InfoRowDate(item)
+				InfoRowDate(item, sizeScale)
 				val songs = item.songCount ?: item.childCount ?: 0
 				if (songs > 0) {
 					InfoRowItem(contentDescription = null) {
@@ -341,16 +342,16 @@ fun BaseItemInfoRow(
 				}
 
 				val runtime = item.cumulativeRunTimeTicks ?: item.runTimeTicks
-				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				if (includeRuntime) runtime?.ticks?.let { BaseItemInfoRowRuntime(it, sizeScale) }
+				item.officialRating?.let { InfoRowParentalRating(it, sizeScale) }
+				InfoRowMediaDetails(item, sizeScale)
 			}
 
 			else -> {
-				InfoRowDate(item)
-				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it) }
-				item.officialRating?.let { InfoRowParentalRating(it) }
-				InfoRowMediaDetails(item)
+				InfoRowDate(item, sizeScale)
+				if (includeRuntime) item.runTimeTicks?.ticks?.let { BaseItemInfoRowRuntime(it, sizeScale) }
+				item.officialRating?.let { InfoRowParentalRating(it, sizeScale) }
+				InfoRowMediaDetails(item, sizeScale)
 			}
 		}
 	}
@@ -362,9 +363,11 @@ fun BaseItemInfoRow(
 class BaseItemInfoRowView @JvmOverloads constructor(
 	context: Context,
 	attrs: AttributeSet? = null,
+	sizeScale: Float,
 ) : AbstractComposeView(context, attrs) {
 	private val _item = MutableStateFlow<BaseItemDto?>(null)
 	private val _includeRuntime = MutableStateFlow(false)
+	private val _sizeScale = MutableStateFlow(sizeScale)
 
 	var item: BaseItemDto?
 		get() = _item.value
@@ -387,7 +390,8 @@ class BaseItemInfoRowView @JvmOverloads constructor(
 	override fun Content() {
 		val item by _item.collectAsState()
 		val includeRuntime by _includeRuntime.collectAsState()
+		val sizeScale by _sizeScale.collectAsState()
 
-		item?.let { BaseItemInfoRow(it, includeRuntime) }
+		item?.let { BaseItemInfoRow(it, includeRuntime, sizeScale) }
 	}
 }

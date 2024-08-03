@@ -2,13 +2,14 @@ package org.jellyfin.androidtv.util;
 
 import android.content.Context;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
 import org.jellyfin.androidtv.ui.browsing.composable.inforow.BaseItemInfoRowView;
 import org.jellyfin.sdk.model.api.BaseItemDto;
 
 public class InfoLayoutHelper {
-    public static void addInfoRow(Context context, BaseItemDto item, LinearLayout layout, boolean includeRuntime) {
+    public static void addInfoRow(Context context, BaseItemDto item, LinearLayout layout, boolean includeRuntime, Float sizeScale) {
         // Find existing BaseItemInfoRowView or create a new one
         BaseItemInfoRowView baseItemInfoRowView = null;
 
@@ -22,12 +23,21 @@ public class InfoLayoutHelper {
         }
 
         if (baseItemInfoRowView == null) {
-            baseItemInfoRowView = new BaseItemInfoRowView(context);
+            baseItemInfoRowView = new BaseItemInfoRowView(context, sizeScale);
             layout.addView(baseItemInfoRowView);
         }
 
         // Update item info
         baseItemInfoRowView.setItem(item);
         baseItemInfoRowView.setIncludeRuntime(includeRuntime);
+
+        // Scale the layout height
+        ViewGroup.LayoutParams layoutParams = layout.getLayoutParams();
+        int currentHeight = layoutParams.height;
+        currentHeight = (int)(currentHeight * sizeScale);
+        layoutParams.height = currentHeight;
+        layout.setLayoutParams(layoutParams);
+
+
     }
 }

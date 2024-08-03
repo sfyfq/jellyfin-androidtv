@@ -308,7 +308,7 @@ public class ItemListFragment extends Fragment implements View.OnKeyListener {
 
         LinearLayout mainInfoRow = requireActivity().findViewById(R.id.fdMainInfoRow);
 
-        InfoLayoutHelper.addInfoRow(requireContext(), item, mainInfoRow, false);
+        InfoLayoutHelper.addInfoRow(requireContext(), item, mainInfoRow, false, 1.0f);
         addGenres(mGenreRow);
         addButtons(BUTTON_SIZE);
         mSummary.setText(mBaseItem.getOverview());
