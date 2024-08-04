@@ -79,7 +79,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
     protected ItemRowTarget mItemRowTarget;
     private LinearLayout mInfoRow;
     private TextView mSummary;
-
+    private static final float INFO_ROW_HEIGHT_SCALE = 1.5f;
     protected static final int BY_LETTER = 0;
     protected static final int GENRES = 1;
     protected static final int RANDOM = 2;
@@ -135,6 +135,12 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         mTitle = binding.title;
         mKeyedNumber = binding.numSequence;
         mInfoRow = binding.infoRow;
+
+        // Scale the layout height here
+        ViewGroup.LayoutParams currentParams = mInfoRow.getLayoutParams();
+        currentParams.height = (int)(currentParams.height * INFO_ROW_HEIGHT_SCALE);
+        mInfoRow.setLayoutParams(currentParams);
+
         mSummary = binding.summary;
 
         // Inject the RowsSupportFragment in the results container
@@ -507,7 +513,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
             if (summary != null) mSummary.setText(markdownRenderer.getValue().toMarkdownSpanned(summary));
             else mSummary.setText(null);
 
-            InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true, 1f);
+            InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true, INFO_ROW_HEIGHT_SCALE);
 
             ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) row).getAdapter();
 

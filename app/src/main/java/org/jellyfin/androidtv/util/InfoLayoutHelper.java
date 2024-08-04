@@ -31,13 +31,5 @@ public class InfoLayoutHelper {
         baseItemInfoRowView.setItem(item);
         baseItemInfoRowView.setIncludeRuntime(includeRuntime);
 
-        // Scale the layout height
-        ViewGroup.LayoutParams layoutParams = layout.getLayoutParams();
-        int currentHeight = layoutParams.height;
-        currentHeight = (int)(currentHeight * sizeScale);
-        layoutParams.height = currentHeight;
-        layout.setLayoutParams(layoutParams);
-
-
     }
 }
