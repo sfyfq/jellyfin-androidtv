@@ -1,3 +1,21 @@
+# Features to Implement
+
+- [ ] Do not stop playing when time seeking
+
+- [ ] Shortcut key to access menu without scrolling all the way up
+
+- [ ] Perferred audio and subtitle language setting per series
+
+- [ ] Make seasons non mandatory for TV series
+
+- [ ] Add a control to jump to a specific episode by number
+
+- [ ] Display TV episodes in a vertical grid (just like movies and TV shows) instead of a single row horizontal scroll.
+
+
+
+
+
 <h1 align="center">Jellyfin Android TV</h1>
 <h3 align="center">Part of the <a href="https://jellyfin.org">Jellyfin Project</a></h3>
 
