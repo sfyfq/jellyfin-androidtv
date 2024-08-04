@@ -38,6 +38,7 @@ import org.jellyfin.androidtv.ui.startup.ServerAddViewModel
 import org.jellyfin.androidtv.ui.startup.StartupViewModel
 import org.jellyfin.androidtv.ui.startup.UserLoginViewModel
 import org.jellyfin.androidtv.util.KeyProcessor
+import org.jellyfin.androidtv.util.NumKeyProcessor
 import org.jellyfin.androidtv.util.MarkdownRenderer
 import org.jellyfin.androidtv.util.PlaybackHelper
 import org.jellyfin.androidtv.util.apiclient.ReportingHelper
@@ -135,6 +136,7 @@ val appModule = module {
 	single { MarkdownRenderer(get()) }
 	single { ItemLauncher() }
 	single { KeyProcessor() }
+	single { NumKeyProcessor() }
 	single { ReportingHelper() }
 	single<PlaybackHelper> { SdkPlaybackHelper(get(), get(), get(), get(), get(), get(), get()) }
 

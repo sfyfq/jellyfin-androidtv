@@ -9,7 +9,7 @@ import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 
-class GenericFolderFragment : EnhancedBrowseFragment() {
+class  GenericFolderFragment : EnhancedBrowseFragment() {
 	companion object {
 		private val showSpecialViewTypes = setOf(
 			BaseItemKind.COLLECTION_FOLDER,
@@ -64,12 +64,16 @@ class GenericFolderFragment : EnhancedBrowseFragment() {
 			fields = itemFields,
 			parentId = mFolder.id,
 		)
+
 		val header = when (mFolder.type) {
 			BaseItemKind.SEASON -> mFolder.name
 			else -> getString(R.string.lbl_by_name)
 		}
 
+		// note that it just loads 100 items at a time, which is totalItems in the BrowseRowDef but not equal to the total available items in the library.
+		// Need a way to scroll beyond that.
 		mRows.add(BrowseRowDef(header, byName, 100))
+
 
 		if (mFolder.type == BaseItemKind.SEASON) {
 			val specials = GetSpecialsRequest(mFolder.id)

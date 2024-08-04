@@ -19,7 +19,9 @@ import androidx.leanback.app.RowsSupportFragment;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ClassPresenterSelector;
 import androidx.leanback.widget.HeaderItem;
+import androidx.leanback.widget.HorizontalGridView;
 import androidx.leanback.widget.ListRow;
+import androidx.leanback.widget.ListRowView;
 import androidx.leanback.widget.OnItemViewClickedListener;
 import androidx.leanback.widget.OnItemViewSelectedListener;
 import androidx.leanback.widget.Presenter;
@@ -52,8 +54,11 @@ import org.jellyfin.androidtv.ui.presentation.MutableObjectAdapter;
 import org.jellyfin.androidtv.ui.presentation.PositionableListRowPresenter;
 import org.jellyfin.androidtv.util.CoroutineUtils;
 import org.jellyfin.androidtv.util.InfoLayoutHelper;
+import org.jellyfin.androidtv.util.ItemRowTarget;
 import org.jellyfin.androidtv.util.KeyProcessor;
 import org.jellyfin.androidtv.util.MarkdownRenderer;
+import org.jellyfin.androidtv.util.NumKeyProcessor;
+import org.jellyfin.androidtv.util.apiclient.EmptyLifecycleAwareResponse;
 import org.jellyfin.androidtv.util.sdk.compat.JavaCompat;
 import org.jellyfin.sdk.api.client.ApiClient;
 import org.jellyfin.sdk.model.api.BaseItemDto;
@@ -66,9 +71,12 @@ import java.util.List;
 
 import kotlin.Lazy;
 import kotlinx.serialization.json.Json;
+import timber.log.Timber;
 
 public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.OnKeyListener {
     protected TextView mTitle;
+    protected TextView mKeyedNumber;
+    protected ItemRowTarget mItemRowTarget;
     private LinearLayout mInfoRow;
     private TextView mSummary;
 
@@ -97,6 +105,8 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
     protected BaseRowItem mCurrentItem;
     protected ListRow mCurrentRow;
 
+    protected RowPresenter.ViewHolder mCurrentRowViewHolder;
+
     private Lazy<BackgroundService> backgroundService = inject(BackgroundService.class);
     private Lazy<MarkdownRenderer> markdownRenderer = inject(MarkdownRenderer.class);
     private final Lazy<CustomMessageRepository> customMessageRepository = inject(CustomMessageRepository.class);
@@ -104,6 +114,8 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
     private final Lazy<ApiClient> api = inject(ApiClient.class);
     private final Lazy<ItemLauncher> itemLauncher = inject(ItemLauncher.class);
     private final Lazy<KeyProcessor> keyProcessor = inject(KeyProcessor.class);
+    private final Lazy<NumKeyProcessor> numKeyProcessor = inject(NumKeyProcessor.class);
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -121,18 +133,16 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
         EnhancedDetailBrowseBinding binding = EnhancedDetailBrowseBinding.inflate(inflater, container, false);
 
         mTitle = binding.title;
+        mKeyedNumber = binding.numSequence;
         mInfoRow = binding.infoRow;
         mSummary = binding.summary;
 
         // Inject the RowsSupportFragment in the results container
         if (getChildFragmentManager().findFragmentById(R.id.rowsFragment) == null) {
             mRowsFragment = new RowsSupportFragment();
-            getChildFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.rowsFragment, mRowsFragment).commit();
+            getChildFragmentManager().beginTransaction().replace(R.id.rowsFragment, mRowsFragment).commit();
         } else {
-            mRowsFragment = (RowsSupportFragment) getChildFragmentManager()
-                    .findFragmentById(R.id.rowsFragment);
+            mRowsFragment = (RowsSupportFragment) getChildFragmentManager().findFragmentById(R.id.rowsFragment);
         }
 
         mRowsFragment.setAdapter(mRowsAdapter);
@@ -143,7 +153,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        mKeyedNumber.setText("");
         setupEventListeners();
     }
 
@@ -203,8 +213,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
                 new Handler().postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED))
-                            return;
+                        if (!getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.STARTED)) return;
 
                         for (int i = 0; i < mRowsAdapter.size(); i++) {
                             if (mRowsAdapter.get(i) instanceof ListRow) {
@@ -266,13 +275,11 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
                     rowAdapter = new ItemRowAdapter(requireContext(), def.getSpecialsQuery(), new CardPresenter(true, ImageType.THUMB, 150), mRowsAdapter);
                     break;
                 default:
-                    System.out.println("calling the default case");
                     rowAdapter = new ItemRowAdapter(requireContext(), def.getQuery(), def.getChunkSize(), def.getPreferParentThumb(), def.isStaticHeight(), ps, mRowsAdapter, def.getQueryType());
                     break;
             }
 
             rowAdapter.setReRetrieveTriggers(def.getChangeTriggers());
-
             ListRow row = new ListRow(header, rowAdapter);
             mRowsAdapter.add(row);
             rowAdapter.setRow(row);
@@ -281,7 +288,7 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
 
         addAdditionalRows(mRowsAdapter);
 
-        if (mRowsFragment != null) mRowsFragment.setAdapter(mRowsAdapter);
+        if (mRowsFragment != null) mRowsFragment.setAdapter(mRowsAdapter); // seems redundant as this line is called again in onCreateView()
     }
 
     protected void addAdditionalRows(MutableObjectAdapter<Row> rowAdapter) {
@@ -344,7 +351,12 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
         if (event.getAction() != KeyEvent.ACTION_UP) return false;
-        return keyProcessor.getValue().handleKey(keyCode, mCurrentItem, requireActivity());
+
+        boolean ret = numKeyProcessor.getValue().handleKey(keyCode, mCurrentRow, mCurrentRowViewHolder, mKeyedNumber, mItemRowTarget);
+        if (!ret){
+            return keyProcessor.getValue().handleKey(keyCode, mCurrentItem, requireActivity());
+        }
+        return false;
     }
 
     private void refreshCurrentItem() {
@@ -447,38 +459,119 @@ public class EnhancedBrowseFragment extends Fragment implements RowLoader, View.
 
     private final class ItemViewSelectedListener implements OnItemViewSelectedListener {
         @Override
-        public void onItemSelected(Presenter.ViewHolder itemViewHolder, Object item,
-                                   RowPresenter.ViewHolder rowViewHolder, Row row) {
+        public void onItemSelected(Presenter.ViewHolder itemViewHolder, Object item, RowPresenter.ViewHolder rowViewHolder, Row row) {
             if (!(item instanceof BaseRowItem)) {
                 mTitle.setText(mFolder != null ? mFolder.getName() : "");
                 mInfoRow.removeAllViews();
                 mSummary.setText("");
                 mCurrentItem = null;
+
+                if (mCurrentRow!=null){
+                    ((ItemRowAdapter)((ListRow)mCurrentRow).getAdapter()).setRetrieveFinishedListener(null);
+                }
+                if (mItemRowTarget != null) {
+                    mItemRowTarget.reset();
+                }
+
                 mCurrentRow = null;
+                mCurrentRowViewHolder = null;
                 // Fill in default background
                 backgroundService.getValue().clearBackgrounds();
+                if (mItemRowTarget != null) {
+                    mItemRowTarget.reset();
+                }
                 return;
             }
 
-            BaseRowItem rowItem = (BaseRowItem) item;
+            if (mCurrentRow == null || mRowsAdapter.indexOf(mCurrentRow) != mRowsAdapter.indexOf((ListRow) row)) {
+                Timber.d("Selected row has changed, resetting ItemRowTarget");
+                // the selected row has changed, reset mItemRowTarget if it has been initialized
+                if (mItemRowTarget != null) {
+                    mItemRowTarget.reset();
+                }
+                if (mCurrentRow!=null){
+                    ((ItemRowAdapter)((ListRow)mCurrentRow).getAdapter()).setRetrieveFinishedListener(null);
+                }
+            }
 
+            BaseRowItem rowItem = (BaseRowItem) item;
             mCurrentItem = rowItem;
             mCurrentRow = (ListRow) row;
+            mCurrentRowViewHolder = rowViewHolder;
+
             mInfoRow.removeAllViews();
 
             mTitle.setText(rowItem.getName(requireContext()));
 
             String summary = rowItem.getSummary(requireContext());
-            if (summary != null)
-                mSummary.setText(markdownRenderer.getValue().toMarkdownSpanned(summary));
+            if (summary != null) mSummary.setText(markdownRenderer.getValue().toMarkdownSpanned(summary));
             else mSummary.setText(null);
 
             InfoLayoutHelper.addInfoRow(requireContext(), rowItem.getBaseItem(), mInfoRow, true, 1f);
 
             ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) row).getAdapter();
-            adapter.loadMoreItemsIfNeeded(adapter.indexOf(rowItem));
 
+            if (mItemRowTarget == null) {
+                mItemRowTarget = new ItemRowTarget(adapter.getTotalItems());
+                Lifecycle lifecycle = mRowsFragment.getLifecycle();
+                adapter.setRetrieveFinishedListener(new ItemRowRetrievalCompletion(lifecycle)); // we must remove it if the row has changed
+            }else{
+                mItemRowTarget.setMaxValue(adapter.getTotalItems());
+            }
+
+            int currentIndex = adapter.indexOf(rowItem);
+            adapter.loadMoreItemsIfNeeded(currentIndex);
             backgroundService.getValue().setBackground(rowItem.getBaseItem());
+
         }
     }
+
+    private class ItemRowRetrievalCompletion extends EmptyLifecycleAwareResponse {
+
+        public ItemRowRetrievalCompletion(Lifecycle lifecycle) {
+            super(lifecycle);
+        }
+
+        @Override
+        public void onResponse() {
+            if (!getActive()) {
+                return;
+            }
+
+            if (mCurrentRow == null || mCurrentRowViewHolder == null || mItemRowTarget.isReset()) {
+                super.onResponse();
+                return;
+            }
+
+            ItemRowAdapter adapter = (ItemRowAdapter) ((ListRow) mCurrentRow).getAdapter();
+            int currentIndex = adapter.indexOf(mCurrentItem);
+            int mNumTargetValue = mItemRowTarget.getValue();
+
+            if (mNumTargetValue == currentIndex) {
+                mItemRowTarget.setValue(-1);
+            } else if (mNumTargetValue > currentIndex) {
+                ListRowView listRowView = (ListRowView) mCurrentRowViewHolder.view;
+                HorizontalGridView rowGridView = listRowView.getGridView();
+                rowGridView.smoothScrollToPosition(mNumTargetValue);
+            }
+            super.onResponse();
+        }
+
+        @Override
+        protected void triggerInnerResponse() {
+            if (!getActive()) {
+                return;
+            }
+            super.triggerInnerResponse();
+        }
+
+        @Override
+        public void onError(@Nullable Exception ex) {
+            if (!getActive()) {
+                return;
+            }
+            super.onError(ex);
+        }
+    }
+
 }

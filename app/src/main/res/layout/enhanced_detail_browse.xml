@@ -64,4 +64,15 @@
         android:layout_marginEnd="25dp"
         android:layout_toStartOf="@+id/clock" />
 
+    <TextView
+        android:id="@+id/numSequence"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="16dp"
+        android:text="Future Number Sequence"
+        android:textSize="32sp"
+        android:gravity="center" />
+
 </RelativeLayout>
