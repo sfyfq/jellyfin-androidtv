@@ -16,7 +16,7 @@ import timber.log.Timber;
 
 
 public class NumKeyProcessor {
-    private static final long NUM_KEY_TIME_MS = 1000; // timeout between consecutive number key presses
+    private static final long NUM_KEY_TIME_MS = 2000; // timeout between consecutive number key presses
     private static final long COOLDOWN_TIME_MS = 2000;
     private static final int MAX_KEY_SEQUENCE = 4; // max consecutive key presses
     private StringBuilder numSeqBuilder = new StringBuilder();
