@@ -36,7 +36,7 @@ As soon as the uses changes the position again, it gets rescheduled. Unfortunate
 As a consequence, only the first seek is smooth and the next one becomes buggy. 
 
 Then I found a way to emulate a keyevent representing KEYCODE_ENTER, which is captured by the progressBar inside PlaybackTransportRowPresenter to properly exit the seek mode.
-I think the currently solution works really well.
+I think the current solution works really well.
 - [ ] Shortcut key to access menu without scrolling all the way up
 - [ ] Preferred audio and subtitle language setting per series
 - [ ] Make seasons non mandatory for TV series (Most Asian TV series do not have seasons)
