@@ -2,7 +2,9 @@ package org.jellyfin.androidtv.ui.playback.overlay;
 
 import static java.lang.Math.round;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.View;
@@ -89,9 +91,11 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
     private Runnable mRefreshViewVisibility;
 
     private LinearLayout mButtonRef;
+    private Context context;
 
     CustomPlaybackTransportControlGlue(Context context, VideoPlayerAdapter playerAdapter, PlaybackController playbackController) {
         super(context, playerAdapter);
+        this.context = context;
         this.playbackController = playbackController;
 
         mRefreshEndTime = () -> {
@@ -408,25 +412,20 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         private Runnable seekRunnable = new Runnable() {
             @Override
             public void run() {
-                if (playbackController.isSeeking()){
-                    mHandler.removeCallbacks(seekRunnable);
-                    mHandler.removeCallbacks(resumePlaying);
-                    mHandler.postDelayed(seekRunnable, SEEK_EXECUTION_DELAY_MS);
-
-                }else{
-                    executeSeek(mSeekToPosition);
+                KeyEvent cancelSeek = new KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER);
+                if (context instanceof Activity) {
+                    Activity activity = (Activity) context;
+                    activity.dispatchKeyEvent(cancelSeek);
+                } else if (context instanceof ContextWrapper) {
+                    ContextWrapper contextWrapper = (ContextWrapper) context;
+                    if (contextWrapper.getBaseContext() instanceof Activity) {
+                        Activity activity = (Activity) contextWrapper.getBaseContext();
+                        activity.dispatchKeyEvent(cancelSeek);
+                    }
                 }
             }
         };
 
-        private Runnable resumePlaying = new Runnable() {
-            @Override
-            public void run() {
-                if (mPausedBeforeSeek){
-                    play();
-                }
-            }
-        };
 
         @Override
         public PlaybackSeekDataProvider getPlaybackSeekDataProvider() {
@@ -458,39 +457,29 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
 
         @Override
         public void onSeekPositionChanged(long pos) {
-            pause();
             Timber.d("onSeekPositionChanged to %d!", pos);
-            mSeekToPosition = pos;
-
-            if (playbackController.isSeeking()){
-                Timber.d("Still seeking, delay");
-                mHandler.removeCallbacks(seekRunnable);
-                mHandler.postDelayed(seekRunnable, SEEK_EXECUTION_DELAY_MS);
-            }else{
-                // if not currently seeking, execute seek immediately.
-                executeSeek(mSeekToPosition);
-            }
-        }
-
-        private void executeSeek(long pos){
             if (getSeekProvider() == null) {
-                Timber.d("getSeekProvider is null");
-
-            } else {
+                Timber.d("will seek immediately");
                 getPlayerAdapter().seekTo(pos);
+            } else {
                 mLastUserPosition = pos;
             }
+            // update to the progress bar
             if (getControlsRow() != null) {
                 Timber.d("set current position to %d", pos);
                 getControlsRow().setCurrentPosition(pos);
             }
-            if (mPausedBeforeSeek){
-                mHandler.postDelayed(resumePlaying, SEEK_EXECUTION_DELAY_MS);
+
+            if (getSeekProvider() != null) {
+                mHandler.removeCallbacks(seekRunnable);
+                mHandler.postDelayed(seekRunnable, SEEK_EXECUTION_DELAY_MS);
             }
         }
 
         @Override
         public void onSeekFinished(boolean cancelled) {
+            mHandler.removeCallbacks(seekRunnable, SEEK_EXECUTION_DELAY_MS);
+
             mSeekCanceled = cancelled;
             Timber.d("onSeekFinished!");
             if (!cancelled) {
