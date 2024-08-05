@@ -3,7 +3,23 @@
 - [X] Add a control to jump to a specific episode by number.
   - Mimic the behavior of changing channels on a TV remote.
   ![Demo Animation](docs/screenshots/episodeNavigationByNumber.gif)
-- [ ] Do not stop playing when time seeking
+- [ ] Do not stop playing when time seeking\
+  This is actually the default behavior of leanback library. The relevant code is inside
+`onSeekStarted()`of PlaybackTransportControlGlue.java. See below.
+```java
+        public void onSeekStarted() {
+    mIsSeek = true;
+    mPausedBeforeSeek = !isPlaying();
+    mPlayerAdapter.setProgressUpdatingEnabled(true);
+    // if we seek thumbnails, we don't need save original position because current
+    // position is not changed during seeking.
+    // otherwise we will call seekTo() and may need to restore the original position.
+    mPositionBeforeSeek = mSeekProvider == null ? mPlayerAdapter.getCurrentPosition() : -1;
+    mLastUserPosition = -1;
+    pause();
+}
+```
+It appears that the leanback library has made sure this behavior cannot be overridden...
 - [ ] Shortcut key to access menu without scrolling all the way up
 - [ ] Preferred audio and subtitle language setting per series
 - [ ] Make seasons non mandatory for TV series (Most Asian TV series do not have seasons)
