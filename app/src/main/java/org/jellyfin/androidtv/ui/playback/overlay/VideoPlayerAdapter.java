@@ -13,6 +13,8 @@ import org.koin.java.KoinJavaComponent;
 
 import java.util.List;
 
+import timber.log.Timber;
+
 public class VideoPlayerAdapter extends PlayerAdapter {
 
     private final PlaybackController playbackController;
@@ -48,6 +50,7 @@ public class VideoPlayerAdapter extends PlayerAdapter {
 
     @Override
     public void seekTo(long positionInMs) {
+        Timber.d("seek to %d", positionInMs);
         playbackController.seek(positionInMs);
         updateCurrentPosition();
     }

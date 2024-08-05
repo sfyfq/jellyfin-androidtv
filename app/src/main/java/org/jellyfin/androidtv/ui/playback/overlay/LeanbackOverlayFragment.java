@@ -21,6 +21,7 @@ public class LeanbackOverlayFragment extends PlaybackSupportFragment {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        Timber.d("LeanbackOverlayFragment");
         super.onCreate(savedInstanceState);
 
         setBackgroundType(BG_LIGHT);
@@ -77,6 +78,7 @@ public class LeanbackOverlayFragment extends PlaybackSupportFragment {
         playerGlue.invalidatePlaybackControls();
         playerGlue.setSeekEnabled(playerAdapter.canSeek());
         playerGlue.setSeekProvider(playerAdapter.canSeek() ? new CustomSeekProvider(playerAdapter) : null);
+
         recordingStateChanged();
         playerAdapter.updateDuration();
     }

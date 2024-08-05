@@ -389,6 +389,7 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
         public void onAudioFocusChange(int focusChange) {
             switch (focusChange) {
                 case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    Timber.d("AUDIOFOCUS_LOSS_TRANSIENT, will pause");
                     playbackControllerContainer.getValue().getPlaybackController().pause();
                     break;
                 case AudioManager.AUDIOFOCUS_LOSS:
@@ -438,7 +439,9 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
+        // does not intercept DPAD_LEFT DPAD_RIGHT, MEDIA_FORWARD, MEDIA_REWIND
         if (event.isLongPress()) {
+            Timber.d("long press");
             if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
                 if (mSelectedProgramView instanceof ProgramGridCell)
                     showProgramOptions();
@@ -452,7 +455,9 @@ public class CustomPlaybackOverlayFragment extends Fragment implements LiveTvGui
                 return true;
             }
         } else if (event.getAction() == KeyEvent.ACTION_UP) {
-            if (keyListener.onKey(v, keyCode, event)) return true;
+            if (keyListener.onKey(v, keyCode, event)) {
+                return true;
+            }
 
             if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
                 if ((event.getFlags() & KeyEvent.FLAG_CANCELED_LONG_PRESS) == 0) {

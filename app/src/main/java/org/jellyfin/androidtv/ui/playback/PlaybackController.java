@@ -93,7 +93,7 @@ public class PlaybackController implements PlaybackControllerNotifiable {
 
     // tmp position used when seeking
     private long mSeekPosition = -1;
-    private boolean wasSeeking = false;
+    protected boolean wasSeeking = false;
     private boolean finishedInitialSeek = false;
 
     private LocalDateTime mCurrentProgramEnd = null;
@@ -1031,12 +1031,15 @@ public class PlaybackController implements PlaybackControllerNotifiable {
             // if seek succeeds call play and mirror the logic in play() for unpausing. if fails call pause()
             // stopProgressLoop() being called at the beginning of startProgressLoop keeps this from breaking. otherwise it would start twice
             // if seek() is called from skip()
+            Timber.d("video is seekable");
             mPlaybackState = PlaybackState.SEEKING;
             if (mVideoManager.seekTo(pos) < 0) {
                 if (mFragment != null)
                     Utils.showToast(mFragment.getContext(), mFragment.getString(R.string.seek_error));
+
                 pause();
             } else {
+                Timber.d("VideoManager seekTo succeeded");
                 mVideoManager.play();
                 mPlaybackState = PlaybackState.PLAYING;
                 if (mFragment != null) mFragment.setFadingEnabled(true);
@@ -1313,6 +1316,10 @@ public class PlaybackController implements PlaybackControllerNotifiable {
     public long getCurrentPosition() {
         // don't report the real position if seeking
         return !isPlaying() && mSeekPosition != -1 ? mSeekPosition : mCurrentPosition;
+    }
+
+    public boolean isSeeking(){
+        return wasSeeking;
     }
 
     public boolean isPaused() {

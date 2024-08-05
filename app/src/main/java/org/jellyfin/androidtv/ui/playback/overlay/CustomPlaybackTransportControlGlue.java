@@ -10,14 +10,18 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
+import androidx.leanback.media.PlaybackGlueHost;
 import androidx.leanback.media.PlaybackTransportControlGlue;
 import androidx.leanback.widget.AbstractDetailsDescriptionPresenter;
 import androidx.leanback.widget.Action;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.PlaybackControlsRow;
 import androidx.leanback.widget.PlaybackRowPresenter;
+import androidx.leanback.widget.PlaybackSeekDataProvider;
+import androidx.leanback.widget.PlaybackSeekUi;
 import androidx.leanback.widget.PlaybackTransportRowPresenter;
 import androidx.leanback.widget.PlaybackTransportRowView;
 import androidx.leanback.widget.RowPresenter;
@@ -49,6 +53,8 @@ import org.koin.java.KoinJavaComponent;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+
+import timber.log.Timber;
 
 public class CustomPlaybackTransportControlGlue extends PlaybackTransportControlGlue<VideoPlayerAdapter> {
 
@@ -106,6 +112,14 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
     }
 
     @Override
+    protected  void onAttachedToHost(PlaybackGlueHost host) {
+        super.onAttachedToHost(host);
+        if (host instanceof PlaybackSeekUi) {
+            ((PlaybackSeekUi) host).setPlaybackSeekUiClient(mPlaybackSeekUiClient);
+        }
+    }
+
+    @Override
     protected void onDetachedFromHost() {
         mHandler.removeCallbacks(mRefreshEndTime);
         mHandler.removeCallbacks(mRefreshViewVisibility);
@@ -124,9 +138,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             @Override
             protected RowPresenter.ViewHolder createRowViewHolder(ViewGroup parent) {
                 RowPresenter.ViewHolder vh = super.createRowViewHolder(parent);
-
                 ClockBehavior showClock = KoinJavaComponent.<UserPreferences>get(UserPreferences.class).get(UserPreferences.Companion.getClockBehavior());
-
                 if (showClock == ClockBehavior.ALWAYS || showClock == ClockBehavior.IN_VIDEO) {
                     Context context = parent.getContext();
                     mEndsText = new TextView(context);
@@ -176,6 +188,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             }
         };
         rowPresenter.setDescriptionPresenter(detailsPresenter);
+
         return rowPresenter;
     }
 
@@ -366,6 +379,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
+        Timber.d("customPlaybackTransportControlGlue");
         if (event.getAction() != KeyEvent.ACTION_UP) {
             // The below actions are only handled on key up
             return super.onKey(v, keyCode, event);
@@ -380,5 +394,122 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             selectAudioAction.handleClickAction(playbackController, getPlayerAdapter(), getContext(), v);
         }
         return super.onKey(v, keyCode, event);
+    }
+
+    final SeekUiClient mPlaybackSeekUiClient = new SeekUiClient();
+    class SeekUiClient extends PlaybackSeekUi.Client {
+        boolean mPausedBeforeSeek;
+        long mPositionBeforeSeek;
+        long mLastUserPosition;
+        boolean mIsSeek;
+        long mSeekToPosition;
+        private final int SEEK_EXECUTION_DELAY_MS = 1000;
+        private boolean mSeekCanceled = false;
+        private Runnable seekRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (playbackController.isSeeking()){
+                    mHandler.removeCallbacks(seekRunnable);
+                    mHandler.removeCallbacks(resumePlaying);
+                    mHandler.postDelayed(seekRunnable, SEEK_EXECUTION_DELAY_MS);
+
+                }else{
+                    executeSeek(mSeekToPosition);
+                }
+            }
+        };
+
+        private Runnable resumePlaying = new Runnable() {
+            @Override
+            public void run() {
+                if (mPausedBeforeSeek){
+                    play();
+                }
+            }
+        };
+
+        @Override
+        public PlaybackSeekDataProvider getPlaybackSeekDataProvider() {
+            return getSeekProvider();
+        }
+
+        @Override
+        public boolean isSeekEnabled() {
+            return getSeekProvider() != null || isSeekEnabled();
+        }
+        @Override
+        public void onSeekStarted() {
+            mSeekCanceled = false;
+            Timber.d("onSeekStarted!");
+            mIsSeek = true;
+
+            if (getSeekProvider() == null) {
+                Timber.d("getSeekProvider is null");
+            }
+            getPlayerAdapter().setProgressUpdatingEnabled(true);
+            // if we seek thumbnails, we don't need save original position because current
+            // position is not changed during seeking.
+            // otherwise we will call seekTo() and may need to restore the original position.
+            mPositionBeforeSeek = getSeekProvider() == null ? getPlayerAdapter().getCurrentPosition() : -1;
+            mLastUserPosition = -1;
+            pause();
+            mPausedBeforeSeek = !isPlaying();
+        }
+
+        @Override
+        public void onSeekPositionChanged(long pos) {
+            pause();
+            Timber.d("onSeekPositionChanged to %d!", pos);
+            mSeekToPosition = pos;
+
+            if (playbackController.isSeeking()){
+                Timber.d("Still seeking, delay");
+                mHandler.removeCallbacks(seekRunnable);
+                mHandler.postDelayed(seekRunnable, SEEK_EXECUTION_DELAY_MS);
+            }else{
+                // if not currently seeking, execute seek immediately.
+                executeSeek(mSeekToPosition);
+            }
+        }
+
+        private void executeSeek(long pos){
+            if (getSeekProvider() == null) {
+                Timber.d("getSeekProvider is null");
+
+            } else {
+                getPlayerAdapter().seekTo(pos);
+                mLastUserPosition = pos;
+            }
+            if (getControlsRow() != null) {
+                Timber.d("set current position to %d", pos);
+                getControlsRow().setCurrentPosition(pos);
+            }
+            if (mPausedBeforeSeek){
+                mHandler.postDelayed(resumePlaying, SEEK_EXECUTION_DELAY_MS);
+            }
+        }
+
+        @Override
+        public void onSeekFinished(boolean cancelled) {
+            mSeekCanceled = cancelled;
+            Timber.d("onSeekFinished!");
+            if (!cancelled) {
+                if (mLastUserPosition >= 0) {
+                    seekTo(mLastUserPosition);
+                }
+            } else {
+                if (mPositionBeforeSeek >= 0) {
+                    seekTo(mPositionBeforeSeek);
+                }
+            }
+            mIsSeek = false;
+            if (mPausedBeforeSeek) {
+                play();
+            } else {
+                getPlayerAdapter().setProgressUpdatingEnabled(false);
+                // we neeed update UI since PlaybackControlRow still saves previous position.
+                onUpdateProgress();
+            }
+        }
     }
 }
