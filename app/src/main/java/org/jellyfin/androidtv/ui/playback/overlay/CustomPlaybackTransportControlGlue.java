@@ -434,6 +434,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         @Override
         public void onSeekStarted() {
             mIsSeek = true;
+            mPausedBeforeSeek = !isPlaying();
             getPlayerAdapter().setProgressUpdatingEnabled(true);
             // if we seek thumbnails, we don't need save original position because current
             // position is not changed during seeking.
@@ -441,7 +442,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
             mPositionBeforeSeek = getSeekProvider() == null ? getPlayerAdapter().getCurrentPosition() : -1;
             mLastUserPosition = -1;
             pause();
-            mPausedBeforeSeek = !isPlaying();
+
         }
 
         @Override
@@ -476,7 +477,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
                 }
             }
             mIsSeek = false;
-            if (mPausedBeforeSeek) {
+            if (!mPausedBeforeSeek) {
                 play();
             } else {
                 getPlayerAdapter().setProgressUpdatingEnabled(false);
