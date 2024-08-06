@@ -12,7 +12,6 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.leanback.media.PlaybackGlueHost;
@@ -56,7 +55,6 @@ import org.koin.java.KoinJavaComponent;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
-import timber.log.Timber;
 
 public class CustomPlaybackTransportControlGlue extends PlaybackTransportControlGlue<VideoPlayerAdapter> {
 
@@ -383,7 +381,6 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
 
     @Override
     public boolean onKey(View v, int keyCode, KeyEvent event) {
-        Timber.d("customPlaybackTransportControlGlue");
         if (event.getAction() != KeyEvent.ACTION_UP) {
             // The below actions are only handled on key up
             return super.onKey(v, keyCode, event);
@@ -406,9 +403,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         long mPositionBeforeSeek;
         long mLastUserPosition;
         boolean mIsSeek;
-        long mSeekToPosition;
         private final int SEEK_EXECUTION_DELAY_MS = 1000;
-        private boolean mSeekCanceled = false;
         private Runnable seekRunnable = new Runnable() {
             @Override
             public void run() {
@@ -438,13 +433,7 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         }
         @Override
         public void onSeekStarted() {
-            mSeekCanceled = false;
-            Timber.d("onSeekStarted!");
             mIsSeek = true;
-
-            if (getSeekProvider() == null) {
-                Timber.d("getSeekProvider is null");
-            }
             getPlayerAdapter().setProgressUpdatingEnabled(true);
             // if we seek thumbnails, we don't need save original position because current
             // position is not changed during seeking.
@@ -457,16 +446,13 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
 
         @Override
         public void onSeekPositionChanged(long pos) {
-            Timber.d("onSeekPositionChanged to %d!", pos);
             if (getSeekProvider() == null) {
-                Timber.d("will seek immediately");
                 getPlayerAdapter().seekTo(pos);
             } else {
                 mLastUserPosition = pos;
             }
             // update to the progress bar
             if (getControlsRow() != null) {
-                Timber.d("set current position to %d", pos);
                 getControlsRow().setCurrentPosition(pos);
             }
 
@@ -480,8 +466,6 @@ public class CustomPlaybackTransportControlGlue extends PlaybackTransportControl
         public void onSeekFinished(boolean cancelled) {
             mHandler.removeCallbacks(seekRunnable, SEEK_EXECUTION_DELAY_MS);
 
-            mSeekCanceled = cancelled;
-            Timber.d("onSeekFinished!");
             if (!cancelled) {
                 if (mLastUserPosition >= 0) {
                     seekTo(mLastUserPosition);
