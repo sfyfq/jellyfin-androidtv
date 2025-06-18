@@ -1,11 +1,7 @@
 # New Feature in Progress
 
-- [X] Add a control to jump to a specific episode by number.
-  - Mimic the behavior of changing channels on a TV remote.
-  ![Demo Animation](docs/screenshots/episodeNavigationByNumber.gif)
-- [X] Do not stop playing when time seeking\
-I know there is this TrickPlay feature which shows thumbnails of video fragments when seeking but I still find having to 
-press another key to actually execute seeking rather annoying. 
+- [X] Add a control to jump to a specific episode by number. 
+- [X] Do not stop playing when time seeking.
 
 ### 2024-08-04
 This is actually the default behavior of leanback library. The relevant code is inside
